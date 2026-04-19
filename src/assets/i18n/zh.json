@@ -46,7 +46,9 @@
     "online": "在线"
   },
   "modeIndicator": {
-    "mode": "模式"
+    "mode": "模式",
+    "unknown": "未知",
+    "modeChangeToast": "模式已切换为：{mode}"
   },
   "selectedIndicator": {
     "selected": "已选中"

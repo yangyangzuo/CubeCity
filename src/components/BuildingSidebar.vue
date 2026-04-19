@@ -37,7 +37,10 @@ function setMode(mode) {
     return
   gameState.setMode(mode)
   gameState.setSelectedBuilding(null)
-  gameState.addToast(`MODE : ${mode.toUpperCase()} CHANGE`, 'info')
+  gameState.addToast(
+    t('modeIndicator.modeChangeToast', { mode: t(`buildingSidebar.${mode}`) }),
+    'info',
+  )
 }
 
 // 键盘快捷键映射

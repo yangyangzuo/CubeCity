@@ -45,7 +45,9 @@
     "online": "Online"
   },
   "modeIndicator": {
-    "mode": "Mode"
+    "mode": "Mode",
+    "unknown": "Unknown",
+    "modeChangeToast": "Mode switched to: {mode}"
   },
   "selectedIndicator": {
     "selected": "Selected"

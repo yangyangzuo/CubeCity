@@ -1,16 +1,19 @@
 <script setup>
 import gsap from 'gsap'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useGameState } from '../stores/useGameState'
 
+const { t } = useI18n()
 const gameState = useGameState()
+// 与侧边栏操作模式文案一致，随语言切换
 const modeLabel = computed(() => {
   switch (gameState.currentMode) {
-    case 'build': return 'BUILD'
-    case 'relocate': return 'RELOCATE'
-    case 'demolish': return 'DEMOLISH'
-    case 'select': return 'SELECT'
-    default: return gameState.currentMode?.toUpperCase() || 'UNKNOWN'
+    case 'build': return t('buildingSidebar.build')
+    case 'relocate': return t('buildingSidebar.relocate')
+    case 'demolish': return t('buildingSidebar.demolish')
+    case 'select': return t('buildingSidebar.select')
+    default: return gameState.currentMode || t('modeIndicator.unknown')
   }
 })
 
@@ -49,7 +52,7 @@ watch(() => gameState.currentMode, (newVal, oldVal) => {
 
 <template>
   <div class="absolute top-4 left-4 resource-display rounded px-3 py-1">
-    <span class="text-xs text-gray-400 uppercase tracking-wide">MODE:</span>
+    <span class="text-xs text-gray-400 uppercase tracking-wide">{{ t('modeIndicator.mode') }}:</span>
     <span
       ref="modeSpan"
       class="text-sm font-bold ml-2 transition-colors duration-200"
