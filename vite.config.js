@@ -11,6 +11,8 @@ const HOST = _config.server.host
 const PORT = _config.server.port
 
 export default {
+  // 打包使用相对路径，适配非站点根目录部署
+  base: './',
   server: {
     host: HOST,
     port: PORT,
