@@ -5,6 +5,7 @@
     "territory": "Territory",
     "power": "Power",
     "level": "Lv",
+    "online": "Online",
     "day": "Day",
     "music": {
       "playMusic": "Play Music",
@@ -50,7 +51,9 @@
     "modeChangeToast": "Mode switched to: {mode}"
   },
   "selectedIndicator": {
-    "selected": "Selected"
+    "selected": "Selected",
+    "levelShort": "Lv",
+    "none": "None"
   },
   "toastContainer": {
     "success": "Success",

@@ -25,7 +25,7 @@ export function handleSelectMode(ctx, tile) {
 
   // 选中建筑
   ctx.gameState.setSelectedBuilding({ type: building.type, level: building.level || 1 })
-  ctx.gameState.setSelectedPosition(tile.position)
+  ctx.gameState.setSelectedPosition({ x: tile.x, z: tile.y })
 }
 
 /**
@@ -94,7 +94,7 @@ export function handleDemolishMode(ctx, tile) {
     })
     // 选中建筑
     ctx.gameState.setSelectedBuilding({ type: tile.buildingInstance.type, level: tile.buildingInstance.level || 1 })
-    ctx.gameState.setSelectedPosition(tile.position)
+    ctx.gameState.setSelectedPosition({ x: tile.x, z: tile.y })
   }
   else {
     // 没建筑，直接变草地

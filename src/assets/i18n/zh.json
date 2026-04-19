@@ -51,7 +51,9 @@
     "modeChangeToast": "模式已切换为：{mode}"
   },
   "selectedIndicator": {
-    "selected": "已选中"
+    "selected": "已选中",
+    "levelShort": "等级",
+    "none": "无"
   },
   "toastContainer": {
     "success": "成功",
@@ -84,7 +86,11 @@
     "displayName": "等级名称",
     "category": "分类",
     "upgradeCost": "升级消耗",
-    "nextLevel": "下一级"
+    "nextLevel": "下一级",
+    "upgradeInfo": "升级信息",
+    "currentLevel": "当前等级",
+    "improvements": "提升项",
+    "maxLevel": "已达到最高等级"
   },
   "confirmDialog": {
     "title": "确认操作",
@@ -106,6 +112,9 @@
     "demolishMessage": "确定要拆除 <span class=\"text-[#ff4402] font-bold\"> {building} </span>? 拆除后将获得 {refund} 金币。",
     "demolishConfirm": "确认拆除",
     "building": "建筑"
+  },
+  "error": {
+    "insufficientFunds": "资金不足"
   },
   "restorePrompt": {
     "title": "继续上局游戏？",
