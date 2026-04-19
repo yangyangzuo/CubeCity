@@ -24,6 +24,8 @@ const i18n = createI18n({
   locale: gameState.language,
   fallbackLocale: 'en',
   messages: { zh, en },
+  // 文案为仓库内静态 JSON，且多处用 v-html 展示样式；关闭「翻译串含 HTML」的控制台告警（非用户输入）
+  warnHtmlMessage: false,
 })
 
 app.use(i18n)
