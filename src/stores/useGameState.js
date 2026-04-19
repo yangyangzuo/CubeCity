@@ -2,6 +2,9 @@ import { getAdjustedStabilityRate, STABILITY_CONFIG } from '@/constants/constant
 import { getEffectiveBuildingValue } from '@/js/utils/building-interaction-utils.js'
 import { defineStore } from 'pinia'
 
+/** Toast 无操作时的自动消失时间（毫秒），与模式切换等提示一致 */
+const TOAST_AUTO_DISMISS_MS = 5000
+
 export const useGameState = defineStore('gameState', {
   state: () => ({
     // 核心游戏状态
@@ -254,6 +257,10 @@ export const useGameState = defineStore('gameState', {
       if (this.toastQueue.length > 2) {
         this.toastQueue.shift()
       }
+      // 5 秒后自动移除（用户点击提前关闭时，多调一次 removeToast 无害）
+      setTimeout(() => {
+        this.removeToast(id)
+      }, TOAST_AUTO_DISMISS_MS)
     },
     setLanguage(lang) {
       this.language = lang
