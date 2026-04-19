@@ -3,29 +3,33 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useBuilding } from '@/hooks/useBuilding.js'
 import { eventBus } from '@/js/utils/event-bus.js'
 // 全局对话层：订阅 mitt 以展示确认弹窗，并在内部完成交易
-import { onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { onMounted, onUnmounted, ref, shallowRef } from 'vue'
 
 /** 无操作时自动关闭确认框的毫秒数 */
 const AUTO_CLOSE_MS = 5000
 
-// 弹窗可见与数据
+// 弹窗可见与数据（shallowRef：避免普通 ref 将配置对象做成深层响应式，进而让 watchEffect 被频繁触发并反复 clearTimeout，导致永远关不上）
 const show = ref(false)
-const dialogData = ref(null)
+const dialogData = shallowRef(null)
 const { getDialogConfig, handleBuildingTransaction } = useBuilding()
 
-// 弹窗打开期间仅保留一个定时器；须同时读取 show 与 dialogData，避免短路导致 dialogData 未收集依赖、计时器不重启
-watchEffect((onCleanup) => {
-  const open = show.value
-  const data = dialogData.value
-  if (!open || !data)
-    return
-  const id = window.setTimeout(() => {
+let autoCloseTimer = null
+
+function clearAutoCloseTimer() {
+  if (autoCloseTimer != null) {
+    clearTimeout(autoCloseTimer)
+    autoCloseTimer = null
+  }
+}
+
+/** 仅在弹窗打开时调用：启动单次自动关闭，与响应式副作用解耦，避免定时器被无限重置 */
+function armAutoClose() {
+  clearAutoCloseTimer()
+  autoCloseTimer = window.setTimeout(() => {
+    autoCloseTimer = null
     show.value = false
   }, AUTO_CLOSE_MS)
-  onCleanup(() => {
-    window.clearTimeout(id)
-  })
-})
+}
 
 // 处理 UI 侧触发的确认动作
 function onAskConfirm(payload) {
@@ -33,12 +37,13 @@ function onAskConfirm(payload) {
   dialogData.value = getDialogConfig(payload.action, payload.buildingType, payload.buildingLevel)
   if (dialogData.value) {
     show.value = true
-    // dialogData 更新会触发上方 watchEffect，自动重置 5 秒计时
+    armAutoClose()
   }
 }
 
 // 点击确认：执行交易并广播结果
 function onConfirm() {
+  clearAutoCloseTimer()
   const ok = handleBuildingTransaction(
     dialogData.value.action,
     dialogData.value.buildingType,
@@ -52,6 +57,7 @@ function onConfirm() {
 
 // 点击取消：关闭弹窗
 function onCancel() {
+  clearAutoCloseTimer()
   show.value = false
 }
 
@@ -59,6 +65,7 @@ onMounted(() => {
   eventBus.on('ui:confirm-action', onAskConfirm)
 })
 onUnmounted(() => {
+  clearAutoCloseTimer()
   eventBus.off('ui:confirm-action', onAskConfirm)
 })
 </script>
