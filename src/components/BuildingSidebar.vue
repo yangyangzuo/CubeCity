@@ -37,6 +37,7 @@ function setMode(mode) {
     return
   gameState.setMode(mode)
   gameState.setSelectedBuilding(null)
+
   gameState.addToast(
     t('modeIndicator.modeChangeToast', { mode: t(`buildingSidebar.${mode}`) }),
     'info',

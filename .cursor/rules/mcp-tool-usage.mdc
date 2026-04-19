@@ -21,8 +21,8 @@ alwaysApply: true
 
 ## GitHub MCP
 
-- Commit and push code changes to GitHub using the **GitHub MCP server** after every successful test.
-- Ensure commits are clear, descriptive, and incremental.
+- **仅在用户明确要求提交/推送时**，再使用 **GitHub MCP** 执行 commit 或 push（默认不自动提交，见 `git-no-auto-commit.mdc`）。
+- 若用户要求推送，commits 应清晰、可增量、描述准确。
 - Never overwrite or unintentionally alter files like README.md or other critical documentation without explicit user approval.
 
 

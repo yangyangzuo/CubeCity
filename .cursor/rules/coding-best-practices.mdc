@@ -9,7 +9,7 @@ alwaysApply: true
 - Avoid duplicating existing functionality; reuse working components whenever possible.
 - Write comprehensive tests for all new or modified functionality.
 - **Never unintentionally delete data or code**; confirm explicitly before destructive actions.
-- Commit frequently to maintain a reliable project history.
+- **Git 提交由开发者在本地完成**；助手不自动执行 commit/push（详见 `git-no-auto-commit.mdc`）。
 - Always ask clarifying questions if tasks or requirements are unclear.
 
 ## User Interface (UI)
