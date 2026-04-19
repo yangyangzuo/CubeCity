@@ -56,15 +56,17 @@ function toggleContent() {
 </script>
 
 <template>
-  <div
-    v-if="isVisible"
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    @click="closeModal"
-  >
+  <!-- 挂到 body，避免被 header 层叠上下文或底部 footer（城市指标等 z-10）遮挡 -->
+  <Teleport to="body">
     <div
-      class="industrial-panel shadow-industrial max-w-4xl w-full max-h-[90vh] overflow-hidden"
-      @click="handleContentClick"
+      v-if="isVisible"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm pointer-events-auto"
+      @click="closeModal"
     >
+      <div
+        class="industrial-panel max-h-[90vh] w-full max-w-4xl overflow-hidden shadow-industrial"
+        @click="handleContentClick"
+      >
       <!-- 标题栏 -->
       <div class="p-4 border-b border-gray-600 flex justify-between items-center">
         <h2 class="text-xl font-bold text-industrial-accent uppercase tracking-wide neon-text">
@@ -555,7 +557,8 @@ function toggleContent() {
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
