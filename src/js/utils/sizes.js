@@ -41,7 +41,9 @@ export default class Sizes extends EventEmitter {
 		}
 		// 避免高度为 0 导致宽高比异常（Infinity/NaN）
 		this.aspect = this.width / Math.max(this.height, 1);
-		this.pixelRatio = Math.min(window.devicePixelRatio, 2);
+		// 比如手机 DPR=3，如果不限制，实际渲染像素可能是屏幕像素的 9 倍量级，性能压力很大
+		// 限制为 1.5-2 之间比较合理
+		this.pixelRatio = Math.min(window.devicePixelRatio, 1.5);
 	}
 
 	/**
