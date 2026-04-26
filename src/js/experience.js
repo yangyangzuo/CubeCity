@@ -40,6 +40,7 @@ export default class Experience {
 		this.scene = new THREE.Scene();
 		this.camera = new Camera(true);
 		this.renderer = new Renderer();
+		// 读取配置文件 sources.js,加载资源存储到resources.items中
 		this.resources = new Resources(sources);
 		this.physics = new PhysicsWorld();
 		this.iMouse = new IMouse();
