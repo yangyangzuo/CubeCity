@@ -30,8 +30,8 @@ export default class Resources extends EventEmitter {
     this.loadingPercentage = document.getElementById('loading-percentage')
 
     this.options = {
-      dracoDecoderPath: 'https://www.gstatic.com/draco/v1/decoders/',
-      ktx2TranscoderPath: 'https://unpkg.com/three/examples/jsm/libs/basis/',
+      dracoDecoderPath: './libs/draco/decoders/',
+      ktx2TranscoderPath: './libs/basis/basis/',
       ...options,
     }
 

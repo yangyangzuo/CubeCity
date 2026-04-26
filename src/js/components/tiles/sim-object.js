@@ -48,7 +48,7 @@ export default class SimObject extends THREE.Object3D {
 	 * @returns {THREE.Object3D|null}
 	 */
 	initMeshFromResource(resource) {
-		debugger;
+		// debugger;
 		console.log("initMeshFromResource()...", resource, resource.scene);
 		if (!resource || !resource.scene) return null;
 		// 克隆模型

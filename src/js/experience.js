@@ -44,6 +44,7 @@ export default class Experience {
 		this.resources = new Resources(sources);
 		this.physics = new PhysicsWorld();
 		this.iMouse = new IMouse();
+		// World中注册资源加载完成的ready事件,实例化city
 		this.world = new World();
 		this.gameState = useGameState();
 
