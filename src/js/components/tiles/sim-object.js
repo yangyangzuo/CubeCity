@@ -49,7 +49,7 @@ export default class SimObject extends THREE.Object3D {
 	 */
 	initMeshFromResource(resource) {
 		// debugger;
-		console.log("initMeshFromResource()...", resource, resource.scene);
+		// console.log("initMeshFromResource()...", resource, resource.scene);
 		if (!resource || !resource.scene) return null;
 		// 克隆模型
 		const mesh = resource.scene.clone();
