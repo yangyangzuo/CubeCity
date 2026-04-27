@@ -1,6 +1,9 @@
 import { DEG2RAD } from 'three/src/math/MathUtils.js'
+import * as THREE from 'three'
 import Experience from '../../../experience.js'
 import Building from '../building.js'
+
+const ROAD_INSTANCE_DEBUG = true
 
 /**
  * 代表道路的建筑类型.
@@ -17,7 +20,9 @@ export default class Road extends Building {
     this.name = 'Road'
     this.style = 'straight' // 默认样式
     this.hideTerrain = true
-    this.mesh.position.set(0, 0.01, 0)
+    if (this.mesh) {
+      this.mesh.position.set(0, 0.01, 0)
+    }
   }
 
   /**
@@ -25,12 +30,13 @@ export default class Road extends Building {
    * @param {City} city
    */
   refreshView(city) {
-    // 建筑是作为子对象添加到Tile上的，所以它的parent就是Tile实例
-    const tile = this.parent
+    // mesh 路径下 parent 是 Tile；实例化路径下使用构造时注入的 this.tile
+    const tile = this.parent || this.tile
     if (!tile)
       return
 
-    const [x, y] = tile.name.split('-').slice(1).map(Number)
+    const x = tile.x
+    const y = tile.y
 
     // 检查相邻地块的建筑类型
     const top = city.getTile(x, y - 1)?.buildingInstance?.type === 'road'
@@ -109,10 +115,36 @@ export default class Road extends Building {
       rotationY = 90 * DEG2RAD
     }
 
-    const resource = this.resources.items[resourceName]
+    if (this.useInstancedBuilding && this.city && this.tile) {
+      // 实例化路径：直接替换实例句柄，不再创建/替换 mesh
+      const nextQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY)
+      // 若道路类型未变，仅更新姿态，避免重复释放/分配实例
+      if (this.instanceHandle && this.resourceName === resourceName) {
+        const worldPos = this.city.getTileWorldPosition(this.tile.x, this.tile.y, new THREE.Vector3())
+        worldPos.y = 0.11
+        this.city.instancedPool.updateTransform(this.instanceHandle, {
+          position: worldPos,
+          quaternion: nextQuaternion,
+          scale: new THREE.Vector3(0.98, 1, 0.98),
+        })
+        return
+      }
+      this.instanceHandle = this.city.replaceBuildingInstance(
+        this.tile,
+        this.instanceHandle,
+        resourceName,
+        {
+          quaternion: nextQuaternion,
+          scale: new THREE.Vector3(0.98, 1, 0.98),
+          y: 0.11,
+        },
+      )
+      this.resourceName = resourceName
+      return
+    }
 
+    const resource = this.resources.items[resourceName]
     if (resource && resource.scene) {
-      // 使用 SimObject 的方法来初始化模型，这会处理材质克隆等
       const newMesh = this.initMeshFromResource(resource)
       if (newMesh) {
         newMesh.rotation.y = rotationY

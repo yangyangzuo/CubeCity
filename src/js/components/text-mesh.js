@@ -268,7 +268,6 @@ export default class TextMesh {
       for (const group of this.textGroups) {
         for (const letter of group.children) {
           const { body } = letter
-          console.log(body)
 
           if (letter !== object)
             continue
@@ -387,7 +386,6 @@ export default class TextMesh {
 
   addGroundToGroup(group) {
     if (!group.isGroundDisplayed) {
-      console.log('Adding ground to group')
       this.world.addBody(group.ground)
       group.isGroundDisplayed = true
     }

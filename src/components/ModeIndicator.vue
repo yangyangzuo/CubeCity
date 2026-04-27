@@ -51,7 +51,7 @@ watch(() => gameState.currentMode, (newVal, oldVal) => {
 </script>
 
 <template>
-  <div class="absolute top-4 left-4 resource-display rounded px-3 py-1">
+  <div class="absolute top-4 left-4 z-[50] resource-display rounded px-3 py-1">
     <span class="text-xs text-gray-400 uppercase tracking-wide">{{ t('modeIndicator.mode') }}:</span>
     <span
       ref="modeSpan"

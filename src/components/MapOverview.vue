@@ -3,8 +3,14 @@ import { BUILDING_DATA } from '@/constants/constants.js'
 import { useGameState } from '@/stores/useGameState'
 // 地图概览组件，展示17x17区块的建筑分布
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 const { metadata } = storeToRefs(useGameState())
+const gridSize = computed(() => metadata.value?.length || 17)
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${gridSize.value}, minmax(0, 1fr))`,
+  gridTemplateRows: `repeat(${gridSize.value}, minmax(0, 1fr))`,
+}))
 
 // 根据格子内容返回不同的 tailwind class
 function tileClass(tile) {
@@ -52,7 +58,10 @@ function tileTooltip(x, y, tile) {
     <div class="text-center text-base sm:text-lg font-bold text-white mb-2 select-none">
       M A P
     </div>
-    <div class="flex-1 w-full h-full aspect-square grid grid-cols-17 grid-rows-17 gap-[1px] bg-[#212121]  rounded-lg shadow-md overflow-hidden">
+    <div
+      class="flex-1 w-full h-full aspect-square grid gap-[1px] bg-[#212121]  rounded-lg shadow-md overflow-hidden"
+      :style="gridStyle"
+    >
       <template v-for="(row, x) in metadata" :key="x">
         <template v-for="(tile, y) in row" :key="y">
           <div
@@ -71,12 +80,5 @@ function tileTooltip(x, y, tile) {
   </div>
 </template>
 
-<!-- 主要样式用 tailwind，极少自定义 -->
 <style scoped>
-.grid-cols-17 {
-  grid-template-columns: repeat(17, minmax(0, 1fr));
-}
-.grid-rows-17 {
-  grid-template-rows: repeat(17, minmax(0, 1fr));
-}
 </style>

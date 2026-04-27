@@ -53,6 +53,7 @@ export default [
 	{ name: "park_level2", type: "gltfModel", path: "models/tree_level2.glb" },
 	{ name: "park_level3", type: "gltfModel", path: "models/tree_level3.glb" },
 	// roadPass
+	// 道路模型
 	{
 		name: "road",
 		type: "gltfModel",

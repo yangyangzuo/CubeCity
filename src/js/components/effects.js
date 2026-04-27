@@ -34,6 +34,9 @@ function billboardEffectFactory(textureName, duration = 2.5) {
         map: texture,
         transparent: true,
         depthWrite: false,
+        depthTest: false,
+        // 广告牌需要 360° 可见，避免相机绕到背面时被单面剔除
+        side: THREE.DoubleSide,
         opacity: 0, // 初始透明度为0，用于缓入
       })
 
@@ -42,12 +45,23 @@ function billboardEffectFactory(textureName, duration = 2.5) {
       // 无视射线
       billboard.raycast = () => {}
       billboard.name = `buff_billboard_${textureName}`
+      // 提高渲染顺序，配合 depthTest=false 防止被建筑遮住
+      billboard.renderOrder = 999
 
       // 计算广告牌的理想高度，并添加到建筑上
       // 使用原始建筑网格的边界框，而不是包含广告牌的整体边界框
       const box = new THREE.Box3().setFromObject(mesh)
-      const height = box.max.y
-      const startY = height + (config.offsetY || 0.3)
+      // 实例化路径下锚点通常是 Object3D（空包围盒），可用配置传入的 baseHeight 回退
+      const height = box.isEmpty()
+        ? (config.baseHeight || 0)
+        : box.max.y
+      // 优先使用显式 offsetY；否则按模型高度自适应顶部间距，避免“拍脑门常量”
+      const adaptivePadding = Math.max(
+        config.minTopPadding || 0.12,
+        height * (config.topPaddingRatio || 0.08),
+      )
+      const topOffset = config.offsetY !== undefined ? config.offsetY : adaptivePadding
+      const startY = height + topOffset
       billboard.position.set(0, startY, 0)
       mesh.add(billboard)
 
@@ -65,10 +79,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
         },
         '-=0.25', // 让浮动动画稍微提前开始，更自然
       )
-
-      // 将时间线存储在广告牌的用户数据中，便于后续清理
-      billboard.userData.timeline = tl
-      billboard.userData.originalY = startY
 
       // 返回的实例中包含 experience，以便 update 方法使用
       return { billboard, timeline: tl, experience, startY, material }
@@ -90,10 +100,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
       if (instance.timeline) {
         instance.timeline.kill()
       }
-      if (instance.billboard.userData.timeline) {
-        instance.billboard.userData.timeline.kill()
-      }
-
       // 执行快速淡出动画（比正常deactivate更快）
       gsap.to(instance.billboard.material, {
         opacity: 0,
@@ -110,10 +116,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
           if (instance.billboard.material) {
             instance.billboard.material.dispose()
           }
-          // 清理用户数据
-          delete instance.billboard.userData.timeline
-          delete instance.billboard.userData.originalY
-
           onComplete()
         },
       })
@@ -124,11 +126,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
         // 立即停止时间线动画
         if (instance.timeline) {
           instance.timeline.kill()
-        }
-
-        // 也检查并停止存储在用户数据中的时间线
-        if (instance.billboard.userData.timeline) {
-          instance.billboard.userData.timeline.kill()
         }
 
         // 缓出动画后清理资源
@@ -142,9 +139,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
             }
             instance.billboard.geometry.dispose()
             instance.billboard.material.dispose()
-            // 清理用户数据
-            delete instance.billboard.userData.timeline
-            delete instance.billboard.userData.originalY
           },
         })
       }
@@ -168,11 +162,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
     cleanupExistingBillboards(mesh, immediate = true) {
       mesh.children.forEach((child) => {
         if (child.name && child.name.startsWith('buff_billboard_')) {
-          // 立即停止任何正在进行的动画
-          if (child.userData.timeline) {
-            child.userData.timeline.kill()
-          }
-
           if (immediate) {
             // 立即清理
             mesh.remove(child)
@@ -180,8 +169,6 @@ function billboardEffectFactory(textureName, duration = 2.5) {
               child.geometry.dispose()
             if (child.material)
               child.material.dispose()
-            delete child.userData.timeline
-            delete child.userData.originalY
           }
           else {
             // 标记为待清理，但不立即移除

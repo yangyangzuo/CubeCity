@@ -1,7 +1,5 @@
-import gsap from 'gsap'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import Experience from './experience.js'
 
 export default class Camera {
@@ -16,21 +14,14 @@ export default class Camera {
 
     /* ---------- 固定点位 ---------- */
     this.fixedPoints = [
-      new THREE.Vector3(18, 10, 18),
-      new THREE.Vector3(18, 10, -2),
-      new THREE.Vector3(-2, 10, -2),
-      new THREE.Vector3(-2, 10, 18),
+      new THREE.Vector3(18, 18, 18),
     ]
     this.currentIndex = 0 // 当前点位索引
-    this.target = new THREE.Vector3(8, 0, 8)
-
-    this.isRotating = false // 是否正在切换动画
-    this.initialAngle = null // 记录“初始角”，仅作为标记，不强制使用
+    this.target = new THREE.Vector3(0, 0, 0)
 
     this.setInstance()
     this.setControls()
     this.setDebug()
-    this.setKeyboardControls()
   }
 
   /* -------------------------------------------------- */
@@ -69,27 +60,27 @@ export default class Camera {
     // 鼠标自由旋转（OrbitControls）
     this.orbitControls = new OrbitControls(this.instance, this.canvas)
     this.orbitControls.enableDamping = true
-    this.orbitControls.enableZoom = false
-    this.orbitControls.enableRotate = true // 允许鼠标旋转
+    // 禁止视角平移，只允许围绕目标旋转与缩放
+    this.orbitControls.enablePan = false
+    // 允许滚轮缩放远近
+    this.orbitControls.enableZoom = true
+    this.orbitControls.zoomSpeed = 1.0
+    this.orbitControls.enableRotate = true // 允许鼠标绕目标点旋转
+    // 限制俯仰角范围（极角，单位弧度），避免视角过平或翻转到底部
+    this.orbitControls.minPolarAngle = Math.PI * 0.2
+    this.orbitControls.maxPolarAngle = Math.PI * 0.48
     this.orbitControls.dampingFactor = 0.3
     this.orbitControls.target.copy(this.target)
 
-    // 锁定垂直极角：当前相机 -> 目标点的方向
-    const offset = new THREE.Vector3().subVectors(this.instance.position, this.target)
-    const polarAngle = offset.angleTo(new THREE.Vector3(0, 1, 0))
-    this.orbitControls.minPolarAngle = polarAngle
-    this.orbitControls.maxPolarAngle = polarAngle
-
-    // 缩放（TrackballControls）
-    this.trackballControls = new TrackballControls(this.instance, this.canvas)
-    this.trackballControls.noRotate = true
-    this.trackballControls.noPan = true
-    this.trackballControls.noZoom = false
-    this.trackballControls.zoomSpeed = 1
-    this.trackballControls.minZoom = 0.5
-    this.trackballControls.maxZoom = 2
-    this.trackballControls.target.copy(this.target)
-    this.trackballControls.handleResize()
+    // 根据相机类型设置缩放边界，避免滚轮缩放过近或过远
+    if (this.orthographic) {
+      this.orbitControls.minZoom = 0.5
+      this.orbitControls.maxZoom = 4
+    }
+    else {
+      this.orbitControls.minDistance = 5
+      this.orbitControls.maxDistance = 80
+    }
   }
 
   setDebug() {
@@ -113,72 +104,9 @@ export default class Camera {
       this.instance.aspect = this.sizes.width / this.sizes.height
       this.instance.updateProjectionMatrix()
     }
-    this.trackballControls.handleResize()
   }
 
   update() {
     this.orbitControls.update()
-    this.trackballControls.update()
-  }
-
-  /* -------------------------------------------------- */
-  /*              键盘切换逻辑（核心改动）               */
-  /* -------------------------------------------------- */
-  setKeyboardControls() {
-    window.addEventListener('keydown', (ev) => {
-      if (this.isRotating)
-        return
-
-      if (ev.key === 'ArrowLeft') {
-        this.snapToNextPoint(-1) // 逆时针
-      }
-      else if (ev.key === 'ArrowRight') {
-        this.snapToNextPoint(1) // 顺时针
-      }
-    })
-  }
-
-  snapToNextPoint(step) {
-    // 1. 找到离当前相机最近的点位
-    const pos = this.instance.position
-    let closest = 0
-    let minDist = pos.distanceTo(this.fixedPoints[0])
-
-    for (let i = 1; i < this.fixedPoints.length; i++) {
-      const d = pos.distanceTo(this.fixedPoints[i])
-      if (d < minDist) {
-        minDist = d
-        closest = i
-      }
-    }
-
-    // 2. 计算下一个点位索引
-    const next = (closest + step + this.fixedPoints.length) % this.fixedPoints.length
-
-    // 3. 执行动画
-    this.animateTo(this.fixedPoints[next])
-  }
-
-  animateTo(targetPos) {
-    this.isRotating = true
-
-    gsap.to(this.instance.position, {
-      duration: 0.7,
-      ease: 'power2.inOut',
-      x: targetPos.x,
-      y: targetPos.y,
-      z: targetPos.z,
-      onUpdate: () => {
-        this.instance.lookAt(this.target)
-        // 同步控制器
-        this.orbitControls.target.copy(this.target)
-        this.trackballControls.target.copy(this.target)
-      },
-      onComplete: () => {
-        this.isRotating = false
-        this.orbitControls.update()
-        this.trackballControls.update()
-      },
-    })
   }
 }

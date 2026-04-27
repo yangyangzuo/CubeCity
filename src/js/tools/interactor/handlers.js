@@ -9,6 +9,8 @@ import {
   updateAdjacentRoads,
 } from './utils.js'
 
+const ROAD_INSTANCE_DEBUG = true
+
 // =================================================================================
 //  各模式下的具体逻辑处理器
 // =================================================================================
@@ -48,6 +50,15 @@ export function handleBuildMode(ctx, tile) {
     showToast('error', message)
     return
   }
+  const buildingCost = BUILDING_DATA[buildingTypeToBuild]?.levels[buildingLevelToBuild]?.cost || 0
+  // 先校验资金，再落 metadata，避免“建造失败但状态已写入”导致数据/DOM不同步
+  if (ctx.gameState.credits < buildingCost) {
+    const message = ctx.gameState.language === 'zh'
+      ? '资金不足，无法建造。'
+      : 'Insufficient funds, unable to build.'
+    showToast('error', message)
+    return
+  }
   // 通过 Pinia 修改 metadata
   ctx.gameState.setTile(x, y, {
     type: 'ground',
@@ -59,14 +70,7 @@ export function handleBuildMode(ctx, tile) {
     // 产出因子 可能因为某些因素而影响产出，比如人口、科技等
     outputFactor: 1,
   })
-  if (ctx.gameState.credits < BUILDING_DATA[buildingTypeToBuild]?.levels[buildingLevelToBuild]?.cost) {
-    const message = ctx.gameState.language === 'zh'
-      ? '资金不足，无法建造。'
-      : 'Insufficient funds, unable to build.'
-    showToast('error', message)
-    return
-  }
-  ctx.gameState.updateCredits(-BUILDING_DATA[buildingTypeToBuild]?.levels[buildingLevelToBuild]?.cost)
+  ctx.gameState.updateCredits(-buildingCost)
   // ...后续同步 Three.js 层刷新
   tile.setBuilding(buildingTypeToBuild, buildingLevelToBuild, 0)
   tile.setType('ground')
@@ -205,20 +209,30 @@ export function confirmUpgrade(ctx) {
  * @param {Interactor} ctx - Interactor 实例
  */
 export function confirmDemolish(ctx) {
-  const tile = ctx.selected
-  const building = tile.buildingInstance
-  if (tile && building) {
-    // 这里才修改 metadata
-    ctx.gameState.setTile(tile.x, tile.y, {
-      type: 'ground',
-      building: null,
-      direction: 0,
-      level: 0,
-    })
-    tile.removeBuilding()
-    showBuildingRemovedToast(building.type, tile, building.level, ctx.gameState)
-    updateAdjacentRoads(tile, ctx.experience.world.city)
+  // 优先使用当前选中地块；若弹窗期间选中态被清空，则回退到 selectedPosition
+  let tile = ctx.selected
+  if (!tile) {
+    const selectedPos = ctx.gameState.selectedPosition
+    const city = ctx.experience.world?.city
+    if (selectedPos && city) {
+      tile = city.getTile(selectedPos.x, selectedPos.z)
+    }
   }
+  const building = tile?.buildingInstance
+  if (!tile || !building) {
+    return
+  }
+
+  // 这里才修改 metadata
+  ctx.gameState.setTile(tile.x, tile.y, {
+    type: 'ground',
+    building: null,
+    direction: 0,
+    level: 0,
+  })
+  tile.removeBuilding()
+  showBuildingRemovedToast(building.type, tile, building.level, ctx.gameState)
+  updateAdjacentRoads(tile, ctx.experience.world.city)
 }
 
 /**

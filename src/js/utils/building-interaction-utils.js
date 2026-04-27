@@ -47,16 +47,20 @@ export function calculateModifiedValue(gameState, buildingType, level, x, y, val
   if (!baseValue && baseValue !== 0)
     return 0 // 允许0值（如道路的属性）
 
-  // 2. 获取相互作用配置
+  // 2. 应用产出/消耗因子（默认1），让 metadata.outputFactor 真正参与动态计算
+  const outputFactor = tile?.outputFactor ?? 1
+  const factoredBaseValue = baseValue * outputFactor
+
+  // 3. 获取相互作用配置
   const interactions = BUILDING_INTERACTIONS[buildingType]
   const modifiers = interactions?.modifiers?.[valueType]
   if (!modifiers || modifiers.length === 0)
-    return baseValue
+    return Math.max(0, factoredBaseValue)
 
-  let finalValue = baseValue
+  let finalValue = factoredBaseValue
   let totalEffect = 0
 
-  // 3. 应用所有修正器
+  // 4. 应用所有修正器
   modifiers.forEach((modifier) => {
     if (modifier.requireAll === false) {
       // 如果只需要满足其中一个条件
@@ -95,7 +99,7 @@ export function calculateModifiedValue(gameState, buildingType, level, x, y, val
     }
   })
 
-  // 4. 应用总修正效果
+  // 5. 应用总修正效果
   if (totalEffect !== 0) {
     if (totalEffect < 0) {
       // 负效果：减少百分比

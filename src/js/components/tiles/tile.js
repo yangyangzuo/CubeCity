@@ -16,7 +16,7 @@ export default class Tile extends SimObject {
    *   options.color: 颜色字符串
    *   options.direction: 建筑朝向，0/90/180/270，单位为度，默认为0
    */
-  constructor(x, y, { type = 'grass', building = null, direction = 0, level = 0 } = {}) {
+  constructor(x, y, { type = 'grass', building = null, direction = 0, level = 0, renderMode = 'mesh', city = null, useInstancedBuildings = false } = {}) {
     // 获取 Experience 单例
     const experience = new Experience()
     const resources = experience.resources
@@ -31,40 +31,48 @@ export default class Tile extends SimObject {
     this.direction = direction // 建筑朝向，单位为度
     this.level = level // 建筑等级
     this.buildingInstance = null
+    this.renderMode = renderMode
+    this.city = city
+    this.surfaceHandle = null
+    this.surfaceResourceName = null
+    this.useInstancedBuildings = useInstancedBuildings
 
-    // ========== 创建 grass mesh ==========
-    const grassResource = resources.items.grass ? resources.items.grass : null
-    const grassMesh = this.initMeshFromResource(grassResource)
-    grassMesh.children[0].material.metalness = Math.random() * 0.5
-    grassMesh.children[0].material.roughness = Math.random() * 0.5
-
-    this.grassMesh = grassResource
-      ? grassMesh
-      : new THREE.Mesh(
+    if (this.renderMode === 'mesh') {
+      // ========== 旧渲染路径：草地统一改为轻量 BoxGeometry ==========
+      this.grassMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.98, 0.2, 0.98),
-        new THREE.MeshStandardMaterial({ color: '#579649' }),
+        new THREE.MeshStandardMaterial({
+          color: '#579649',
+          metalness: 0.1,
+          roughness: 0.9,
+        }),
       )
-    this.grassMesh.position.set(0, 0, 0)
-    this.grassMesh.scale.set(0.98, 1, 0.98)
-    this.grassMesh.userData = this
-    this.grassMesh.name = `${this.name}-grass`
+      this.grassMesh.position.set(0, 0, 0)
+      this.grassMesh.scale.set(0.98, 1, 0.98)
+      this.grassMesh.userData = this
+      this.grassMesh.name = `${this.name}-grass`
 
-    // ========== 创建 ground mesh（上层，默认隐藏） ==========
-    const groundResource = resources.items.ground ? resources.items.ground : null
-    this.groundMesh = groundResource
-      ? this.initMeshFromResource(groundResource)
-      : new THREE.Mesh(
-        new THREE.BoxGeometry(1, 0.2, 1),
-        new THREE.MeshStandardMaterial({ color: '#a89984' }),
-      )
-    this.groundMesh.position.set(0, 0.01, 0) // 稍微高于 grass，避免 z-fighting
-    this.groundMesh.scale.set(0.98, 1, 0.98)
-    this.groundMesh.userData = this
-    this.groundMesh.name = `${this.name}-ground`
-    this.groundMesh.visible = (type === 'ground') // 初始是否显示
+      // ========== 旧渲染路径：创建 ground mesh ==========
+      const groundResource = resources.items.ground ? resources.items.ground : null
+      this.groundMesh = groundResource
+        ? this.initMeshFromResource(groundResource)
+        : new THREE.Mesh(
+          new THREE.BoxGeometry(1, 0.2, 1),
+          new THREE.MeshStandardMaterial({ color: '#a89984' }),
+        )
+      this.groundMesh.position.set(0, 0.01, 0)
+      this.groundMesh.scale.set(0.98, 1, 0.98)
+      this.groundMesh.userData = this
+      this.groundMesh.name = `${this.name}-ground`
+      this.groundMesh.visible = (type === 'ground')
 
-    this.grassMesh.add(this.groundMesh)
-    this.setMesh(this.grassMesh)
+      this.grassMesh.add(this.groundMesh)
+      this.setMesh(this.grassMesh)
+    }
+    else if (this.city) {
+      // 实例化路径：仅分配地面实例，Tile 继续作为业务对象存在
+      this.city.allocateTileSurface(this)
+    }
 
     // 如果有建筑，加载建筑实例
     if (building) {
@@ -75,7 +83,13 @@ export default class Tile extends SimObject {
   // 切换地皮类型（只切换 ground mesh 显隐）
   setType(type) {
     this.type = type
-    this.groundMesh.visible = (type === 'ground')
+    if (this.renderMode === 'mesh') {
+      this.groundMesh.visible = (type === 'ground')
+      return
+    }
+    if (this.city) {
+      this.city.setTileState(this, { type })
+    }
   }
 
   // 创建并添加建筑实例
@@ -83,26 +97,54 @@ export default class Tile extends SimObject {
     this.removeBuilding()
     const buildingData = BUILDING_DATA[type]
     const levelData = buildingData.levels[level]
-    const options = { buildingData, levelData, position: { x: this.x, y: this.y } }
+    const useInstancedBuilding = this.city
+      ? this.city.shouldUseInstancedBuilding(type)
+      : this.useInstancedBuildings
+    const options = {
+      buildingData,
+      levelData,
+      position: { x: this.x, y: this.y },
+      city: this.city,
+      tile: this,
+      useInstancedBuilding,
+    }
     const buildingInstance = createBuilding(type, level, direction, options)
     if (buildingInstance) {
       this.buildingInstance = buildingInstance
-      this.grassMesh.add(buildingInstance)
+      if (this.renderMode === 'mesh') {
+        this.grassMesh.add(buildingInstance)
+      }
     }
   }
 
   // 移除原有建筑实例
   removeBuilding() {
     if (this.buildingInstance) {
-      this.grassMesh.remove(this.buildingInstance)
+      if (this.renderMode === 'mesh') {
+        this.grassMesh.remove(this.buildingInstance)
+      }
+      this.buildingInstance.dispose?.()
       this.buildingInstance = null
+    }
+  }
+
+  // 释放 Tile 持有的资源（重建地图尺寸时调用）
+  dispose() {
+    this.removeBuilding()
+    if (this.renderMode !== 'mesh' && this.city && this.surfaceHandle) {
+      this.city.instancedPool.free(this.surfaceHandle)
+      this.surfaceHandle = null
+      this.surfaceResourceName = null
     }
   }
 
   // 设置材质颜色（只作用于 grass）
   setColor(color) {
-    if (this.grassMesh && this.grassMesh.material) {
+    if (this.renderMode === 'mesh' && this.grassMesh && this.grassMesh.material) {
       this.grassMesh.material.color.set(color)
+    }
+    else if (this.city) {
+      this.city.setTileState(this, { color })
     }
   }
 
@@ -116,5 +158,15 @@ export default class Tile extends SimObject {
 
   resize() {
     // 预留
+  }
+
+  // 在实例化渲染下，聚焦效果转交给 City 管理
+  setFocused(value, mode = 'select') {
+    if (this.renderMode === 'mesh') {
+      super.setFocused(value, mode)
+      return
+    }
+    this.city?.applyTileHighlight(this, value, mode)
+    this.buildingInstance?.setFocused(value, mode)
   }
 }

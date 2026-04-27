@@ -1,6 +1,7 @@
 import { BUILDING_DATA } from '@/constants/constants.js'
 import { eventBus } from '@/js/utils/event-bus.js'
 import { FREE_BUILDING_TYPES } from './constants.js'
+import * as THREE from 'three'
 
 /**
  * 判断建筑是否可以放置在指定地块 (单纯判断地形)
@@ -13,6 +14,9 @@ import { FREE_BUILDING_TYPES } from './constants.js'
 export function canPlaceBuilding(x, y, buildingType, metadata) {
   if (!metadata?.[x]?.[y])
     return false
+  // 道路允许直接建造（否则第一条路永远无法落地）
+  if (buildingType === 'road')
+    return true
   // 部分特殊建筑可随意建造
   if (FREE_BUILDING_TYPES.includes(buildingType))
     return true
@@ -37,6 +41,27 @@ export function canPlaceBuilding(x, y, buildingType, metadata) {
  * @returns {object|null} - 找到的 Tile 实例或 null
  */
 export function getIntersectedTile(raycaster, iMouse, camera, cityGroup) {
+  // 实例化渲染路径：通过地平面反推网格索引，不依赖对象级 raycast
+  const city = cityGroup?.userData?.city
+  if (city) {
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+    const hit = new THREE.Vector3()
+    raycaster.setFromCamera(iMouse.normalizedMouse, camera)
+    const hasHit = raycaster.ray.intersectPlane(plane, hit)
+    if (!hasHit)
+      return null
+
+    const half = (city.size - 1) / 2
+    const min = -half - 0.5
+    const max = half + 0.5
+    if (hit.x < min || hit.x > max || hit.z < min || hit.z > max)
+      return null
+
+    const x = Math.round(hit.x + half)
+    const y = Math.round(hit.z + half)
+    return city.getTile(x, y)
+  }
+
   raycaster.setFromCamera(iMouse.normalizedMouse, camera)
   const intersections = raycaster.intersectObjects(cityGroup.children, true)
 

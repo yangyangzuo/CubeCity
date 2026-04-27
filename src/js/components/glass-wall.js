@@ -130,7 +130,6 @@ export default class GlassWall {
   update() {
     this.updateLightPositionSmooth() // 添加这行
 
-    console.log(this.iMouse.normalizedMouse)
 
     if (this.glassMaterial) {
       this.glassWallGroup.visible = false

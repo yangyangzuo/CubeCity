@@ -38,6 +38,9 @@ export default class Experience {
 		this.sizes = new Sizes(this.canvas);
 		this.time = new Time();
 		this.scene = new THREE.Scene();
+		// 调试坐标轴：用于快速确认场景方向（X 红 / Y 绿 / Z 蓝）
+		this.axesHelper = new THREE.AxesHelper(26);
+		this.scene.add(this.axesHelper);
 		this.camera = new Camera(true);
 		this.renderer = new Renderer();
 		// 读取配置文件 sources.js,加载资源存储到resources.items中

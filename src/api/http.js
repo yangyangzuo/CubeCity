@@ -107,7 +107,6 @@ let loadingCount = 0;
 const showLoading = () => {
 	if (loadingCount === 0) {
 		// 显示 loading 组件
-		console.log("show loading");
 	}
 	loadingCount++;
 };
@@ -116,7 +115,6 @@ const hideLoading = () => {
 	loadingCount--;
 	if (loadingCount <= 0) {
 		// 隐藏 loading 组件
-		console.log("hide loading");
 		loadingCount = 0;
 	}
 };
@@ -134,7 +132,6 @@ const hideLoading = () => {
 // async function getData() {
 // 	try {
 // 		const user = await fetchUser(1);
-// 		console.log(user);
 // 	} catch (error) {
 // 		console.error(error);
 // 	}

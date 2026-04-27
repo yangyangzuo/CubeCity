@@ -5,6 +5,8 @@ import { checkStatusCondition, getBuildingStatusEffects } from '../../utils/buil
 import { BuffEffects } from '../effects.js'
 import SimObject from './sim-object.js'
 
+const ROAD_INSTANCE_DEBUG = true
+
 // 状态分类配置
 const STATUS_CATEGORIES = {
   // debuff 状态（问题状态，优先显示）
@@ -38,6 +40,14 @@ export default class Building extends SimObject {
     this.direction = direction
     this.options = options
     this.levelData = options.levelData || null
+    this.city = options.city || null
+    this.tile = options.tile || null
+    this.useInstancedBuilding = Boolean(options.useInstancedBuilding)
+    this.instanceHandle = null
+    this.resourceName = null
+    this.effectMesh = null
+    this.effectAnchorReleaseTimer = null
+    this.effectBaseHeight = null
 
     // 新的轮循状态系统
     this.statusConfig = [] // 由子类定义所有可能的状态及其效果
@@ -54,8 +64,25 @@ export default class Building extends SimObject {
 
   // 初始化建筑模型
   initModel() {
-    const modelName = `${this.type}_level${this.level}`
+    // 道路资源命名与常规建筑不同，实例化时统一使用 road
+    const modelName = this.type === 'road' ? 'road' : `${this.type}_level${this.level}`
     const modelResource = this.resources.items[modelName]
+    this.resourceName = modelName
+
+    // 实例化渲染路径：不再生成独立 mesh，直接分配实例句柄
+    if (this.useInstancedBuilding && this.city && this.tile) {
+      const angle = (this.direction % 4) * 90
+      const quaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(angle))
+      // 与水泥底板（y≈0.101）对齐，避免陷入草地盒或埋进薄板
+      const instanceY = 0.11
+      this.instanceHandle = this.city.allocateBuildingInstance(this.tile, modelName, {
+        quaternion,
+        scale: new THREE.Vector3(0.8, 0.8, 0.8),
+        y: instanceY,
+      })
+      return
+    }
+
     if (modelResource && modelResource.scene) {
       const mesh = this.initMeshFromResource(modelResource)
       mesh.position.set(0, 0, 0)
@@ -75,6 +102,42 @@ export default class Building extends SimObject {
       mesh.position.set(0, 0.4, 0)
       this.setMesh(mesh)
     }
+  }
+
+  // 实例化渲染下释放句柄
+  dispose() {
+    if (this.effectAnchorReleaseTimer) {
+      clearTimeout(this.effectAnchorReleaseTimer)
+      this.effectAnchorReleaseTimer = null
+    }
+    if (this.effectMesh?.parent) {
+      this.effectMesh.parent.remove(this.effectMesh)
+    }
+    this.effectMesh = null
+    if (this.useInstancedBuilding && this.city && this.instanceHandle) {
+      this.city.freeBuildingInstance(this.instanceHandle)
+      this.instanceHandle = null
+    }
+    super.dispose()
+  }
+
+  // 实例化渲染下将高亮写入实例属性
+  setFocused(value, mode = 'select') {
+    if (this.useInstancedBuilding && this.instanceHandle && this.city) {
+      const visual = this.city.getHighlightVisual(mode)
+      if (value) {
+        this.city.instancedPool.updateColor(this.instanceHandle, visual.color)
+        this.city.instancedPool.updateOpacity(this.instanceHandle, visual.opacity)
+        this.city.instancedPool.updateEmissive(this.instanceHandle, visual.color)
+      }
+      else {
+        this.city.instancedPool.updateOpacity(this.instanceHandle, 1.0)
+        this.city.instancedPool.updateEmissive(this.instanceHandle, 0x000000)
+        this.city.instancedPool.updateColor(this.instanceHandle, 0xffffff)
+      }
+      return
+    }
+    super.setFocused(value, mode)
   }
 
   // 可被子类重写：升级、产出等
@@ -257,9 +320,10 @@ export default class Building extends SimObject {
     }
 
     const handler = BuffEffects[this.currentStatusInstance.effect.type]
+    const effectTarget = this.getEffectTargetMesh()
     if (handler && handler.fadeOut) {
       // 使用专门的淡出方法
-      handler.fadeOut(this.mesh, this.currentStatusInstance.instance, () => {
+      handler.fadeOut(effectTarget, this.currentStatusInstance.instance, () => {
         this.currentStatusInstance = null
         onComplete()
       })
@@ -277,11 +341,21 @@ export default class Building extends SimObject {
    */
   activateNewStatus(status) {
     const handler = BuffEffects[status.effect.type]
+    const effectConfig = {
+      ...status.effect,
+      // 实例化路径下将“模型包围盒顶部高度”透传给 billboard，保持与旧 mesh 路径一致的垂直基准
+      baseHeight: this.getEffectBaseHeight(),
+    }
+    // 实例化路径：仅在需要显示状态图标时才创建锚点，避免常驻 Object3D
+    if (!this.mesh && this.useInstancedBuilding) {
+      this.createInstancedEffectAnchor(0.11)
+    }
+    const effectTarget = this.getEffectTargetMesh()
     if (handler) {
-      const instance = handler.activate(this.mesh, status.effect, this.experience)
+      const instance = handler.activate(effectTarget, effectConfig, this.experience)
       this.currentStatusInstance = {
         statusType: status.statusType,
-        effect: status.effect,
+        effect: effectConfig,
         instance,
       }
     }
@@ -298,10 +372,12 @@ export default class Building extends SimObject {
       return
 
     const handler = BuffEffects[this.currentStatusInstance.effect.type]
+    const effectTarget = this.getEffectTargetMesh()
     if (handler) {
-      handler.deactivate(this.mesh, this.currentStatusInstance.instance, this.experience)
+      handler.deactivate(effectTarget, this.currentStatusInstance.instance, this.experience)
     }
     this.currentStatusInstance = null
+    this.scheduleReleaseInstancedEffectAnchor()
   }
 
   /**
@@ -312,9 +388,10 @@ export default class Building extends SimObject {
       return
 
     const handler = BuffEffects[this.currentStatusInstance.effect.type]
+    const effectTarget = this.getEffectTargetMesh()
     // 检查处理器是否有 update 方法
-    if (handler && handler.update) {
-      handler.update(this.mesh, this.currentStatusInstance.instance)
+    if (handler && handler.update && effectTarget) {
+      handler.update(effectTarget, this.currentStatusInstance.instance)
     }
   }
 
@@ -328,17 +405,18 @@ export default class Building extends SimObject {
     // 停用当前状态
     this.deactivateCurrentStatus()
 
-    if (!this.mesh)
+    const effectTarget = this.getEffectTargetMesh()
+    if (!effectTarget)
       return
 
     // 立即清理所有广告牌相关的子对象
-    this.mesh.children.forEach((child) => {
+    effectTarget.children.forEach((child) => {
       if (child.name && child.name.startsWith('buff_billboard_')) {
         // 立即停止任何正在进行的动画
         if (child.userData.timeline) {
           child.userData.timeline.kill()
         }
-        this.mesh.remove(child)
+        effectTarget.remove(child)
         if (child.geometry)
           child.geometry.dispose()
         if (child.material)
@@ -353,6 +431,54 @@ export default class Building extends SimObject {
     this.currentDisplayArray = []
     this.rotationIndex = 0
     this.isTransitioning = false
+    this.scheduleReleaseInstancedEffectAnchor(true)
+  }
+
+  /** 获取状态图标挂载目标：优先真实 mesh，其次实例化路径锚点 */
+  getEffectTargetMesh() {
+    return this.mesh || this.effectMesh
+  }
+
+  /** 实例化建筑创建状态锚点（Object3D，不参与渲染） */
+  createInstancedEffectAnchor(instanceY = 0.11) {
+    if (!this.city || !this.tile || this.effectMesh) {
+      return
+    }
+    const anchorMesh = new THREE.Object3D()
+    const worldPos = this.city.getTileWorldPosition(this.tile.x, this.tile.y, new THREE.Vector3())
+    worldPos.y = instanceY
+    anchorMesh.position.copy(worldPos)
+    anchorMesh.name = `EffectAnchor-${this.type}-${this.tile.x}-${this.tile.y}`
+    this.experience.scene.add(anchorMesh)
+    this.effectMesh = anchorMesh
+  }
+
+  /** 状态结束后回收实例化锚点，避免 Scene 中堆积 EffectAnchor-* 对象 */
+  scheduleReleaseInstancedEffectAnchor(immediate = false) {
+    if (this.mesh || !this.effectMesh) {
+      return
+    }
+    if (this.effectAnchorReleaseTimer) {
+      clearTimeout(this.effectAnchorReleaseTimer)
+      this.effectAnchorReleaseTimer = null
+    }
+    const release = () => {
+      // 仍有状态在展示则不释放
+      if (this.currentStatusInstance || this.currentDisplayArray.length > 0) {
+        return
+      }
+      if (this.effectMesh?.parent) {
+        this.effectMesh.parent.remove(this.effectMesh)
+      }
+      this.effectMesh = null
+      this.effectAnchorReleaseTimer = null
+    }
+    if (immediate) {
+      release()
+      return
+    }
+    // 给淡出动画留一点时间，避免中途移除锚点导致状态切换闪烁
+    this.effectAnchorReleaseTimer = setTimeout(release, 360)
   }
 
   /**
@@ -375,6 +501,7 @@ export default class Building extends SimObject {
     if (!gameState)
       return false
 
+    const { x, y } = this.getGridPosition()
     // 从 buffConfig 中获取检查范围，默认为1（相邻）
     const range = this.buffConfig.range || 1
 
@@ -385,8 +512,8 @@ export default class Building extends SimObject {
         if (dx === 0 && dy === 0)
           continue
 
-        // 使用 this.x 和 this.y 来获取指定范围内的位置
-        const neighborTile = gameState.getTile(this.x + dx, this.y + dy)
+        // 实例化路径下 Building 不挂在 Tile 树上，需优先使用 tile 坐标
+        const neighborTile = gameState.getTile(x + dx, y + dy)
 
         // 检查邻居是否存在，以及其建筑类型是否在我们的目标列表里
         if (neighborTile && this.buffConfig.targets.includes(neighborTile.building)) {
@@ -454,7 +581,8 @@ export default class Building extends SimObject {
           building.buffConfig = { targets: ['road'] }
           return !building.checkForBuffTargets(gs)
         },
-        effect: { type: 'missRoad', offsetY: 0.7 },
+        // 缺路图标高度使用包围盒自适应间距（在 effects.js 内按 baseHeight 计算）
+        effect: { type: 'missRoad', scale: 0.65, topPaddingRatio: 0.08, minTopPadding: 0.12 },
       },
     ]
 
@@ -464,11 +592,45 @@ export default class Building extends SimObject {
     // 将配置文件中的状态效果转换为Building类可以理解的格式
     const configuredEffects = buildingStatusEffects.map(statusConfig => ({
       statusType: statusConfig.type,
-      condition: (building, gs) => checkStatusCondition(gs, building.type, building.x, building.y, statusConfig),
+      condition: (building, gs) => {
+        const { x, y } = building.getGridPosition()
+        return checkStatusCondition(gs, building.type, x, y, statusConfig)
+      },
       effect: statusConfig.effect,
     }))
 
     // 合并基础配置和配置文件中的效果
     return [...baseConfig, ...configuredEffects]
+  }
+
+  /** 获取建筑所在格子坐标：实例化路径优先取 tile 坐标，mesh 路径回退到 world 坐标 */
+  getGridPosition() {
+    if (this.tile) {
+      return { x: this.tile.x, y: this.tile.y }
+    }
+    return { x: this.x, y: this.y }
+  }
+
+  /** 计算状态图标的基础高度：优先用资源包围盒（实例化路径），回退 0 */
+  getEffectBaseHeight() {
+    if (this.effectBaseHeight !== null) {
+      return this.effectBaseHeight
+    }
+    if (!this.resourceName || !this.resources?.items) {
+      this.effectBaseHeight = 0
+      return this.effectBaseHeight
+    }
+    // wind_power 拆分为 __base/__fan 时，图标高度应基于原模型
+    const baseResourceName = this.resourceName.replace('__base', '').replace('__fan', '')
+    const resource = this.resources.items[baseResourceName]
+    if (!resource?.scene) {
+      this.effectBaseHeight = 0
+      return this.effectBaseHeight
+    }
+    const box = new THREE.Box3().setFromObject(resource.scene)
+    const modelTopY = box.isEmpty() ? 0 : box.max.y
+    // 建筑实例统一 scale=0.8，按同倍率缩放高度
+    this.effectBaseHeight = modelTopY * 0.8
+    return this.effectBaseHeight
   }
 }

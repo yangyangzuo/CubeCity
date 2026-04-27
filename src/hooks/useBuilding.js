@@ -99,7 +99,8 @@ export function useBuilding() {
   // 判断是否可以执行操作
   const canAffordOperation = (action, buildingType, level = 1) => {
     const cost = getBuildingCost(action, buildingType, level)
-    return action === 'demolish' || gameState.credits >= cost
+    // 搬迁不应被建筑造价校验拦截（否则确认后不触发 relocate 逻辑）
+    return action === 'demolish' || action === 'relocate' || gameState.credits >= cost
   }
 
   // 处理建筑操作的金额变动
@@ -118,7 +119,7 @@ export function useBuilding() {
         gameState.updateTile(gameState.selectedPosition.x, gameState.selectedPosition.z, { level: level + 1 })
         break
       case 'relocate':
-        gameState.updateCredits(-100)
+        // 搬迁流程只触发三维层交换，不在此处扣费，避免弹框确认后无动作
         break
       default:
         break

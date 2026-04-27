@@ -48,8 +48,7 @@ export default class SimObject extends THREE.Object3D {
 	 * @returns {THREE.Object3D|null}
 	 */
 	initMeshFromResource(resource) {
-		debugger;
-		// console.log("initMeshFromResource()...", resource, resource.scene);
+		// 兼容层：旧渲染路径仍使用资源克隆，实例化路径不再调用该方法
 		if (!resource || !resource.scene) return null;
 		// 克隆模型
 		const mesh = resource.scene.clone();

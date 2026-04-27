@@ -258,6 +258,12 @@ export default class Interactor {
 			newFocusedTile.setFocused(true, mode);
 
 		this.focused = newFocusedTile;
+		const city = this.cityGroup?.userData?.city;
+		if (city && newFocusedTile) {
+			city.hoverTileIndex = city.getTileIndex(newFocusedTile.x, newFocusedTile.y);
+		} else if (city) {
+			city.hoverTileIndex = -1;
+		}
 	}
 
 	/**
@@ -271,6 +277,12 @@ export default class Interactor {
 		if (this.selected) this.selected.setFocused(false, this.gameState.currentMode);
 
 		this.selected = tile;
+		const city = this.cityGroup?.userData?.city;
+		if (city && tile) {
+			city.selectedTileIndex = city.getTileIndex(tile.x, tile.y);
+		} else if (city) {
+			city.selectedTileIndex = -1;
+		}
 
 		// 设置新选中对象的高亮
 		if (this.selected) this.selected.setFocused(true, this.gameState.currentMode);
@@ -287,6 +299,11 @@ export default class Interactor {
 		this.selected = null;
 		this.relocateFirst = null;
 		this.relocateSecond = null;
+		const city = this.cityGroup?.userData?.city;
+		if (city) {
+			city.selectedTileIndex = -1;
+			city.hoverTileIndex = -1;
+		}
 
 		// 通知UI层清空选择信息
 		this.gameState.clearSelection();
