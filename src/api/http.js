@@ -13,23 +13,20 @@ const showInfoToast = (message, duration = 1000) => {
 	});
 };
 
-
 /**
  * 创建 axios 实例
  * 配置基础 URL、超时时间、请求头等
  */
-// Resolve baseURL from Vite env variables (VITE_*) or fallback to .env values
+// 统一按环境解析请求基地址：
+// - 开发环境：走 Vite 本地代理，避免前端直连具体后端地址
+// - 非开发环境：使用构建时注入的后端地址
 const env = import.meta.env || {};
-console.log(env);
-const host = env.VITE_SERVER_HOST;
-const port = env.VITE_SERVER_PORT;
-//如果host前缀有http或https,则不添加协议
-let baseURL = host;
-if (host.indexOf("http") === -1) {
-	const proto = env.VITE_SERVER_PROTOCOL || "http";
-	baseURL = `${proto}://${host}`;
+if (env.DEV) {
+	var baseURL = "";
+} else {
+	var baseURL = env.VITE_SERVER_BASEURL;
 }
-baseURL += `:${port}`;
+console.log("axios-----baseURL::::::::", baseURL);
 
 const http = axios.create({
 	baseURL,
@@ -82,7 +79,6 @@ http.interceptors.response.use(
 				if (data.code == 1) {
 					showInfoToast(data.msg);
 					return Promise.reject(data);
-
 				} else {
 					const errorMsg = data.msg || "请求失败";
 					// 提示信息
