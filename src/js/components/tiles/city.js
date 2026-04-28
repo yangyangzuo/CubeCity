@@ -30,12 +30,14 @@ export default class City {
 		this.resources = this.experience.resources;
 		this.debug = this.experience.debug;
 		this.sceneMetadata = this.experience.sceneMetadata;
+		this.gameState = useGameState();
 		// 地皮专用 Group（仅承载逻辑对象，不再承载大量 mesh）
 		this.root = new THREE.Group();
 		this.root.userData.city = this;
 		this.scene.add(this.root);
-		// 地皮尺寸
-		this.size = SIZE;
+		// 地皮尺寸：优先读取持久化尺寸，缺省回退常量 SIZE
+		const persistedSize = Number(this.gameState.citySize);
+		this.size = Number.isFinite(persistedSize) && persistedSize > 0 ? persistedSize : SIZE;
 		// 当前阶段仅对地皮实例化，建筑保持原 mesh 渲染路径
 		this.enableInstancedBuildings = false;
 		// 允许道路走实例化渲染
@@ -105,7 +107,7 @@ export default class City {
 		this.root.clear();
 		this.tileByIndex.clear();
 
-		const gameState = useGameState();
+		const gameState = this.gameState;
 		const { metadata } = storeToRefs(gameState);
 		const meta = metadata.value;
 		// 场景地皮规模变化后，同步到 UI 状态，避免顶部 DOM 仍显示旧尺寸
@@ -167,8 +169,10 @@ export default class City {
 				max: 65,
 				step: 2,
 			})
-			.on("change", (_ev) => {
-				// 变更规模时，重建地皮
+			.on("change", (ev) => {
+				// 变更规模时，先同步状态层 metadata，再重建地皮实例
+				this.size = Number(ev.value);
+				this.gameState.resizeCityMap(this.size);
 				this.initTiles();
 			});
 		const statsFolder = this.debugFolder.addFolder({

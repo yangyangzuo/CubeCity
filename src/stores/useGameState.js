@@ -4,16 +4,17 @@ import { defineStore } from 'pinia'
 
 /** Toast 无操作时的自动消失时间（毫秒），与模式切换等提示一致 */
 const TOAST_AUTO_DISMISS_MS = 5000
+const DEFAULT_TILE = () => ({
+  type: 'grass',
+  building: null,
+  direction: 0,
+})
 
 export const useGameState = defineStore('gameState', {
   state: () => ({
     // 核心游戏状态
     metadata: Array.from({ length: 17 }, _ =>
-      Array.from({ length: 17 }, _ => ({
-        type: 'grass',
-        building: null,
-        direction: 0,
-      }))),
+      Array.from({ length: 17 }, _ => DEFAULT_TILE())),
     currentMode: 'build',
     selectedBuilding: null,
     selectedPosition: null,
@@ -250,6 +251,27 @@ export const useGameState = defineStore('gameState', {
     setCitySize(citySize) {
       this.citySize = citySize
     },
+    /**
+     * 按指定尺寸重建地图元数据，尽量保留旧存档中的有效地块信息
+     * @param {number} nextSize - 新地图边长
+     */
+    resizeCityMap(nextSize) {
+      const targetSize = Number(nextSize)
+      if (!Number.isFinite(targetSize) || targetSize < 1) {
+        return
+      }
+      const normalizedSize = Math.floor(targetSize)
+      const oldMetadata = this.metadata || []
+      const nextMetadata = Array.from({ length: normalizedSize }, (_, x) =>
+        Array.from({ length: normalizedSize }, (_, y) => {
+          const oldTile = oldMetadata?.[x]?.[y]
+          // 保留历史 tile 字段（如 detail/outputFactor），超出范围部分用默认草地补齐
+          return oldTile ? { ...oldTile } : DEFAULT_TILE()
+        }))
+      this.metadata = nextMetadata
+      this.citySize = normalizedSize
+      this.territory = normalizedSize
+    },
     addToast(message, type = 'info') {
       const id = Date.now() + Math.random()
       this.toastQueue.push({ message, type, id })
@@ -274,10 +296,16 @@ export const useGameState = defineStore('gameState', {
     },
     setTile(x, y, patch) {
       // 合并 patch 到指定 tile
+      if (!this.metadata?.[x]?.[y]) {
+        return
+      }
       Object.assign(this.metadata[x][y], patch)
     },
     updateTile(x, y, patch) {
       // 语义同 setTile，便于扩展
+      if (!this.metadata?.[x]?.[y]) {
+        return
+      }
       Object.assign(this.metadata[x][y], patch)
     },
     getTile(x, y) {
@@ -300,11 +328,7 @@ export const useGameState = defineStore('gameState', {
     },
     resetAll() {
       this.metadata = Array.from({ length: 17 }, _ =>
-        Array.from({ length: 17 }, _ => ({
-          type: 'grass',
-          building: null,
-          direction: 0,
-        })))
+        Array.from({ length: 17 }, _ => DEFAULT_TILE()))
       this.currentMode = 'build'
       this.selectedBuilding = null
       this.selectedPosition = null
