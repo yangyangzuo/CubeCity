@@ -1,4 +1,5 @@
 <script setup>
+import { userLogin } from "@/api/api.js";
 import { useGameState } from "@/stores/useGameState.js";
 import { onMounted, onUnmounted } from "vue";
 import BuildingDetails from "./components/BuildingDetails.vue";
@@ -19,6 +20,46 @@ const gameState = useGameState();
 // 时间管理 - 统一5秒计时器
 let dayInterval = null;
 let isPaused = false;
+
+// 初始化鉴权：优先使用 URL 上的 token，缺失时自动登录获取
+async function initAuthFromUrlOrLogin() {
+	const url = new URL(window.location.href);
+	const accessToken = url.searchParams.get("accessToken");
+	const refreshToken = url.searchParams.get("refreshToken");
+
+	// URL 上有双 token 时直接使用
+	if (accessToken && refreshToken) {
+		localStorage.setItem(
+			"user_info",
+			JSON.stringify({
+				token: accessToken,
+				accessToken,
+				refreshToken,
+			}),
+		);
+		return;
+	}
+
+	// URL token 不完整时，回退到登录接口
+	try {
+		const loginRes = await userLogin({
+			username: "huiyuanzxyuanma",
+			password: 12345678,
+			loginType: 1,
+		});
+		const tokenData = loginRes?.data || {};
+		localStorage.setItem(
+			"user_info",
+			JSON.stringify({
+				token: tokenData.accessToken || "",
+				accessToken: tokenData.accessToken || "",
+				refreshToken: tokenData.refreshToken || "",
+			}),
+		);
+	} catch (error) {
+		console.error("自动登录失败:", error);
+	}
+}
 
 // 页面可见性监听 - 实现HX-43离屏暂停功能
 function handleVisibilityChange() {
@@ -54,7 +95,8 @@ function handleKeydown(e) {
 	}
 }
 
-onMounted(() => {
+onMounted(async () => {
+	await initAuthFromUrlOrLogin();
 	window.addEventListener("keydown", handleKeydown);
 	// 启动统一的5秒计时器（集成每日收益和稳定度更新）
 	startDayTimer();

@@ -1,138 +1,235 @@
 import axios from "axios";
+import { showToast } from "vant";
 
-// 1. 创建实例并配置基础URL和超时时间
-const createInstance = () => {
-	const instance = axios.create({
-		baseURL: process.env.VUE_APP_API_BASE_URL || "/api",
-		timeout: 15000,
-		headers: { "Content-Type": "application/json" },
+/**
+ * 信息弹框提示组件（统一封装）
+ * @param {String} message - 提示文案
+ * @param {Number} duration - 持续时间
+ */
+const showInfoToast = (message, duration = 1000) => {
+	showToast({
+		message: message || "请求失败",
+		duration,
 	});
-	return instance;
 };
 
-const instance = createInstance();
 
-// ================= 拦截器 =================
-// 2. 请求拦截器：处理token、headers、loading等。
-instance.interceptors.request.use((config) => {
-	// 自动携带 token
-	const token = localStorage.getItem("token");
-	if (token && config.needToken !== false) {
-		config.headers.Authorization = `Bearer ${token}`;
-	}
+/**
+ * 创建 axios 实例
+ * 配置基础 URL、超时时间、请求头等
+ */
+// Resolve baseURL from Vite env variables (VITE_*) or fallback to .env values
+const env = import.meta.env || {};
+console.log(env);
+const host = env.VITE_SERVER_HOST;
+const port = env.VITE_SERVER_PORT;
+//如果host前缀有http或https,则不添加协议
+let baseURL = host;
+if (host.indexOf("http") === -1) {
+	const proto = env.VITE_SERVER_PROTOCOL || "http";
+	baseURL = `${proto}://${host}`;
+}
+baseURL += `:${port}`;
 
-	// 处理不同 Content-Type
-	if (config.data instanceof FormData) {
-		config.headers["Content-Type"] = "multipart/form-data";
-	}
-
-	// 显示 loading
-	if (config.needLoading !== false) {
-		showLoading();
-	}
-
-	return config;
+const http = axios.create({
+	baseURL,
+	timeout: 10000, // 请求超时时间 10 秒
+	headers: {
+		"Content-Type": "application/json;charset=utf-8",
+	},
 });
 
-// 3. 响应拦截器：处理响应数据，错误状态码，关闭loading。
-instance.interceptors.response.use(
-	(response) => {
-		hideLoading();
-
-		// 处理业务数据 (根据项目接口调整)
-		const res = response.data;
-		if (res.code === 200) {
-			return res.data;
-		} else {
-			const errorMsg = res.message || "请求失败";
-			return Promise.reject(new Error(errorMsg));
+/**
+ * 请求拦截器
+ * 在发送请求之前对请求配置进行处理
+ */
+http.interceptors.request.use(
+	(config) => {
+		// console.log(config)
+		// 在发送请求之前可以做些什么
+		// 例如：添加 token、修改请求参数等
+		const userInfo = JSON.parse(localStorage.getItem("user_info") || "{}");
+		const token = userInfo.token;
+		if (token) {
+			config.headers["Authorization"] = `Bearer ${token}`;
 		}
+		// console.log("Request config:", config.url, config.baseURL, config.method, config.data);
+		return config;
 	},
-	async (error) => {
-		hideLoading();
-
-		// 4. 统一错误处理：网络错误、HTTP状态码错误、业务逻辑错误。
-		let errorMessage = "请求失败";
-		if (error.response) {
-			// HTTP 状态码错误
-			switch (error.response.status) {
-				case 401:
-					errorMessage = "未授权，请重新登录";
-					window.location.href = "/login";
-					break;
-				case 403:
-					errorMessage = "拒绝访问";
-					break;
-				case 404:
-					errorMessage = "请求资源不存在";
-					break;
-				case 500:
-					errorMessage = "服务器错误";
-					break;
-				default:
-					// 业务逻辑错误
-					errorMessage = `请求错误: ${error.response.status}`;
-			}
-		} else if (error.request) {
-			// 网络错误
-			errorMessage = "网络连接异常";
-		}
-
-		alert(errorMessage); // 替换为实际提示方式
+	(error) => {
+		// 对请求错误做些什么
+		console.error("Request error:", error);
 		return Promise.reject(error);
 	},
 );
 
-// ================= 封装方法 =================
-// 5. 封装请求方法：如get、post等，简化调用。
-export const get = (url, params, config = {}) => instance.get(url, { params, ...config });
+var islogin = false;
+/**
+ * 响应拦截器
+ * 在收到响应后对响应数据进行处理
+ */
+http.interceptors.response.use(
+	(response) => {
+		// console.log("响应结果:", response);
+		const { status, data } = response;
+		// HTTP 状态码处理
+		if (status >= 200 && status < 300) {
+			// 业务状态码处理
+			if (data.code === 0) {
+				return Promise.resolve(data);
+			} else {
+				// 业务错误处理
+				if (data.code == 1) {
+					showInfoToast(data.msg);
+					return Promise.reject(data);
 
-export const post = (url, data, config = {}) => instance.post(url, data, config);
+				} else {
+					const errorMsg = data.msg || "请求失败";
+					// 提示信息
+					return Promise.reject(data);
+				}
+			}
+		} else {
+			// HTTP 错误处理
+			let errorMsg = "请求失败";
+			switch (status) {
+				case 401:
+					errorMsg = "未授权，请重新登录";
+					// 清除登录信息
+					// 跳转到登录页
+					break;
+				case 403:
+					errorMsg = "拒绝访问";
+					break;
+				case 404:
+					errorMsg = "请求地址不存在";
+					break;
+				case 500:
+					errorMsg = "服务器内部错误";
+					break;
+				case 502:
+					errorMsg = "网关错误";
+					break;
+				case 503:
+					errorMsg = "服务不可用";
+					break;
+				case 504:
+					errorMsg = "网关超时";
+					break;
+			}
+			// 提示信息
+			return Promise.reject({ code: status, message: errorMsg });
+		}
+	},
+	(error) => {
+		console.error("Response error:", error);
+		if (error.response) {
+			console.error("Error response:", error.response.status, error.response.data);
+		}
+		return Promise.reject(error);
+	},
+);
 
-export const put = (url, data, config = {}) => instance.put(url, data, config);
+/**
+ * GET 请求
+ * @param {String} url - 请求地址
+ * @param {Object} params - 请求参数（作为查询参数）
+ * @param {Object} config - 额外的 axios 配置
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const get = (url, params, config) => {
+	return http.get(url, { params, ...config });
+};
 
-export const del = (url, params, config = {}) => instance.delete(url, { params, ...config });
+/**
+ * POST 请求
+ * @param {String} url - 请求地址
+ * @param {Object} data - 请求体数据
+ * @param {Object} config - 额外的 axios 配置
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const post = (url, data, config) => {
+	// 标准 POST：仅发送请求体，不自动拼接 URL 查询参数
+	return http.post(url, data, config);
+};
 
-export const upload = (url, file, fieldName = "file") => {
-	const formData = new FormData();
-	formData.append(fieldName, file);
-	return post(url, formData, {
-		headers: { "Content-Type": "multipart/form-data" },
+/**
+ * PUT 请求
+ * @param {String} url - 请求地址
+ * @param {Object} data - 请求体数据
+ * @param {Object} config - 额外的 axios 配置
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const put = (url, data, config) => {
+	return http.put(url, data, config);
+};
+
+/**
+ * DELETE 请求
+ * @param {String} url - 请求地址
+ * @param {Object} params - 请求参数（作为查询参数）
+ * @param {Object} config - 额外的 axios 配置
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const del = (url, params, config) => {
+	return http.delete(url, { params, ...config });
+};
+
+/**
+ * 文件上传
+ * @param {String} url - 请求地址
+ * @param {FormData|Object} data - 上传的数据
+ * @param {Object} config - 额外的 axios 配置（可包含 onUploadProgress 等）
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const upload = (url, data, config) => {
+	return http.post(url, data, {
+		...config,
+		headers: {
+			"Content-Type": "multipart/form-data",
+			...config?.headers,
+		},
 	});
 };
 
-// ================= 辅助函数 =================
-// Loading 控制
-let loadingCount = 0;
-const showLoading = () => {
-	if (loadingCount === 0) {
-		// 显示 loading 组件
-	}
-	loadingCount++;
+/**
+ * 文件下载
+ * @param {String} url - 请求地址
+ * @param {Object} params - 请求参数（作为查询参数）
+ * @param {String} filename - 下载的文件名（可选）
+ * @param {Object} config - 额外的 axios 配置
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const download = (url, params, filename, config) => {
+	return http
+		.get(url, {
+			params,
+			...config,
+			responseType: "blob",
+		})
+		.then((response) => {
+			// 如果提供了文件名，创建下载链接
+			if (filename) {
+				const blob = new Blob([response]);
+				const downloadUrl = window.URL.createObjectURL(blob);
+				const link = document.createElement("a");
+				link.href = downloadUrl;
+				link.download = filename;
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+				window.URL.revokeObjectURL(downloadUrl);
+			}
+			return response;
+		});
 };
 
-const hideLoading = () => {
-	loadingCount--;
-	if (loadingCount <= 0) {
-		// 隐藏 loading 组件
-		loadingCount = 0;
-	}
+/**
+ * 通用请求方法
+ * 支持自定义请求方法和配置
+ * @param {Object} config - axios 请求配置对象
+ * @returns {Promise} 返回 Promise 对象
+ */
+export const config = (config) => {
+	return http.request(config);
 };
-
-// // ================= 使用示例 =================
-
-// // api.js
-// import { get, post } from '@/utils/request';
-
-// export const fetchUser = (id) => get('/user', { id });
-// export const login = (data) => post('/login', data);
-// export const uploadFile = (file) => upload('/upload', file);
-
-// // 使用示例
-// async function getData() {
-// 	try {
-// 		const user = await fetchUser(1);
-// 	} catch (error) {
-// 		console.error(error);
-// 	}
-// }

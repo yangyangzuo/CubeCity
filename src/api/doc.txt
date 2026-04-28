@@ -1,0 +1,28 @@
+使用账号密码登录复制接口复制文档复制地址
+POST
+/app-api/system/auth/appLogin
+
+请求参数:
+{
+	"username": "huiyuanzxyuanma",
+	"password": 12345678,
+	"loginType": 1
+  }
+
+  返回:
+  {
+	"code": 0,
+	"msg": "",
+	"data": {
+		"userId": 1024,		用户编号
+		"accessToken": "happy",	访问令牌
+		"refreshToken": "nice",	刷新令牌
+		"expiresTime": "",		过期时间
+		"firstLogin": false,	是否首次登录
+		"roleCode": "teacher",		角色编码
+		"roleName": "教师"		角色名称
+	}
+}
+
+
+@doc.txt (1-25)  根据文档描述，修改 @src/api/api.js  中的用户 登录 接口
