@@ -32,8 +32,14 @@ let isExitingGame = false;
 // 初始化鉴权：优先使用 URL 上的 token，缺失时自动登录获取
 async function initAuthFromUrlOrLogin() {
 	const url = new URL(window.location.href);
-	const accessToken = url.searchParams.get("accessToken");
+	const accessToken = url.searchParams.get("authorization");
 	const refreshToken = url.searchParams.get("refreshToken");
+	const tenantId = url.searchParams.get("tenant-id");
+
+	// 页面首次打开时，将 URL 中的 tenant-id 持久化，供 http 层统一读取
+	if (tenantId) {
+		localStorage.setItem("tenant_id", tenantId);
+	}
 
 	// URL 上有双 token 时直接使用
 	if (accessToken && refreshToken) {
@@ -48,6 +54,13 @@ async function initAuthFromUrlOrLogin() {
 		return;
 	}
 
+	// 仅在 #debug 模式下允许自动登录回退，保持与现有 Debug 开关一致
+	const isDebugMode = window.location.hash === "#debug";
+	if (!isDebugMode) {
+		return;
+	}
+	// /play?authorization=xxxxxxxx&refreshToken=xxx&tenant-id=1
+	// /play?authorization=56c314b16d2443aa98bdbdb899dbf8d3&refreshToken=d36b5e6ede444888a11db16ecf866964&tenant-id=1
 	// URL token 不完整时，回退到登录接口
 	try {
 		const loginRes = await userLogin({

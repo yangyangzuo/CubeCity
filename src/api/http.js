@@ -23,14 +23,12 @@ if (env.DEV) {
 } else {
 	var baseURL = env.VITE_SERVER_BASEURL;
 }
-console.log("axios-----baseURL::::::::", baseURL);
 
 const http = axios.create({
 	baseURL,
 	timeout: 10000, // 请求超时时间 10 秒
 	headers: {
 		"Content-Type": "application/json;charset=utf-8",
-		"tenant-id": 1,
 	},
 });
 
@@ -43,6 +41,11 @@ http.interceptors.request.use(
 		// console.log(config)
 		// 在发送请求之前可以做些什么
 		// 例如：添加 token、修改请求参数等
+		// tenant-id 统一从本地缓存读取（由 App 初始化时从 URL 写入）
+		const tenantId = localStorage.getItem("tenant_id") || 1;
+		if (tenantId) {
+			config.headers["tenant-id"] = tenantId;
+		}
 		const userInfo = JSON.parse(localStorage.getItem("user_info") || "{}");
 		const token = userInfo.token;
 		if (token) {
