@@ -1,0 +1,87 @@
+{
+    "paths": {
+        "/app-api/system/auth/refreshToken": {
+            "post": {
+                "tags": [
+                    "用户 App - 用户鉴权"
+                ],
+                "summary": "刷新令牌",
+                "operationId": "refreshToken",
+                "parameters": [
+                    {
+                        "name": "refreshToken",
+                        "in": "query",
+                        "description": "刷新令牌",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommonResultAuthLoginRespVO"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app-api/system/auth/logout": {
+            "post": {
+                "tags": [
+                    "用户 App - 用户鉴权"
+                ],
+                "summary": "退出登录",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommonResultBoolean"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app-api/system/auth/firstLoginResetPassword": {
+            "post": {
+                "tags": [
+                    "用户 App - 用户鉴权"
+                ],
+                "summary": "首次登录设置新密码",
+                "operationId": "firstLoginResetPassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppFirstLoginResetPasswordParam"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommonResultBoolean"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+}

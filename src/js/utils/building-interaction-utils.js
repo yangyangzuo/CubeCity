@@ -1,4 +1,4 @@
-import { BUILDING_INTERACTIONS } from '../../constants/building-interactions.js'
+import { getBuildingInteractions } from '../../constants/building-interactions.js'
 import { BUILDING_DATA } from '../../constants/constants.js'
 
 /**
@@ -8,7 +8,7 @@ import { BUILDING_DATA } from '../../constants/constants.js'
  * @returns {boolean} 是否有相互作用配置
  */
 export function hasInteractionConfig(buildingType, valueType) {
-  const interactions = BUILDING_INTERACTIONS[buildingType]
+  const interactions = getBuildingInteractions()[buildingType]
   const modifiers = interactions?.modifiers?.[valueType]
   return modifiers && modifiers.length > 0
 }
@@ -52,7 +52,7 @@ export function calculateModifiedValue(gameState, buildingType, level, x, y, val
   const factoredBaseValue = baseValue * outputFactor
 
   // 3. 获取相互作用配置
-  const interactions = BUILDING_INTERACTIONS[buildingType]
+  const interactions = getBuildingInteractions()[buildingType]
   const modifiers = interactions?.modifiers?.[valueType]
   if (!modifiers || modifiers.length === 0)
     return Math.max(0, factoredBaseValue)
@@ -230,7 +230,7 @@ export function checkBuildingsInRange(gameState, centerX, centerY, targets, rang
  * @returns {Array} 状态效果配置数组
  */
 export function getBuildingStatusEffects(buildingType) {
-  const interactions = BUILDING_INTERACTIONS[buildingType]
+  const interactions = getBuildingInteractions()[buildingType]
   return interactions?.statusEffects || []
 }
 
@@ -241,6 +241,6 @@ export function getBuildingStatusEffects(buildingType) {
  * @returns {Array} 修正器信息数组
  */
 export function getBuildingModifiers(buildingType, valueType) {
-  const interactions = BUILDING_INTERACTIONS[buildingType]
+  const interactions = getBuildingInteractions()[buildingType]
   return interactions?.modifiers?.[valueType] || []
 }

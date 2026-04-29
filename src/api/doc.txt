@@ -25,4 +25,149 @@ POST
 }
 
 
-@doc.txt (1-25)  根据文档描述，修改 @src/api/api.js  中的用户 登录 接口
+
+
+
+退出登录
+post
+/app-api/system/auth/logout
+
+返回:
+{
+	"code": 0,
+	"msg": "",
+	"data": true
+}
+
+
+
+
+
+保存用户游戏数据
+POST
+/app-api/play/gameData/save
+请求
+{
+  "gameData": ""//游戏数据,json数据
+}
+
+
+获取用户的游戏数据
+get
+/app-api/play/gameData/get
+返回:
+{
+	"code": 0,
+	"msg": "",
+	"data": {
+		"createTime": "",		创建时间
+		"createUsername": "",	创建人账号
+		"createNickname": "",	创建人昵称
+		"updateTime": "",			更新时间
+		"updateUsername": "",	更新人账号
+		"updateNickname": "",	更新人昵称
+		"id": 0,				主键
+		"userId": 0,			学生ID
+		"totalGold": 0,
+		"gameData": "" //游戏数据,json数据
+	}
+}
+
+注意:
+gameData的默认数据:
+'{"metadata":[[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}],[{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0},{"type":"grass","building":null,"direction":0}]],"currentMode":"build","selectedBuilding":null,"selectedPosition":null,"toastQueue":[],"gameDay":31,"credits":3000,"territory":16,"cityLevel":1,"cityName":"HeXian City","citySize":16,"language":"zh","showMapOverview":false,"musicEnabled":true,"musicVolume":0.5,"isPlayingMusic":true,"stability":100,"stabilityChangeRate":0.1}'
+
+
+
+
+
+
+校验当前时间段和剩余时长是否允许游玩
+POST
+/app-api/play/checkPlayTime
+返回值:
+{
+	"code": 0,
+	"msg": "",
+	"data": true
+}
+
+退出游戏并更新游玩时长
+  POST
+/app-api/play/exitGame
+返回值
+{
+	"code": 0,
+	"msg": "",
+	"data": true
+}
+
+
+
+
+
+
+
+
+
+保存或更新运营配置
+  POST /app-api/play/config/save
+请求:
+{
+  "id": 0,			主键ID,不传或为null则为新增
+  "configKey": "",	配置键
+  "refId": "",		关联标识：学校ID/年级名称/班级ID；全局配置可不传
+  "refType": 0,		关联类型：0=全局，1=学校，2=年级，3=班级
+  "value": "",		普通配置内容：字符串或文本
+  "valueJson": "",	JSON 配置内容
+  "enableStatus": 0	启用状态：0=启用，1=禁用
+}
+返回:
+{
+	"code": 0,
+	"msg": "",
+	"data": true
+}
+
+
+
+
+查询运营配置
+  POST /app-api/play/config/list
+
+
+
+
+
+
+
+查询当前用户命中的运营配置
+  GET /app-api/play/config/current
+
+  请求参数:
+	configKey:"eduGameConfig",//固定参数
+
+返回值：
+{
+	"code": 0,
+	"msg": "",
+	"data": {
+		"createTime": "",
+		"createUsername": "",
+		"createNickname": "",
+		"updateTime": "",
+		"updateUsername": "",
+		"updateNickname": "",
+		"id": 0,
+		"configKey": "",
+		"refId": "",
+		"refType": 0,
+		"value": "",
+		"valueJson": "", // 这个就是我们需要的游戏内的规则
+		"enableStatus": 0
+	}
+}
+
+
+
+

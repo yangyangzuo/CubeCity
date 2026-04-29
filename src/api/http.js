@@ -17,9 +17,6 @@ const showInfoToast = (message, duration = 1000) => {
  * 创建 axios 实例
  * 配置基础 URL、超时时间、请求头等
  */
-// 统一按环境解析请求基地址：
-// - 开发环境：走 Vite 本地代理，避免前端直连具体后端地址
-// - 非开发环境：使用构建时注入的后端地址
 const env = import.meta.env || {};
 if (env.DEV) {
 	var baseURL = "";
@@ -33,6 +30,7 @@ const http = axios.create({
 	timeout: 10000, // 请求超时时间 10 秒
 	headers: {
 		"Content-Type": "application/json;charset=utf-8",
+		"tenant-id": 1,
 	},
 });
 

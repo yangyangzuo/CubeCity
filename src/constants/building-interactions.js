@@ -346,3 +346,47 @@ export const BUILDING_INTERACTIONS = {
 		],
 	},
 };
+
+// 运行时生效的建筑相互作用配置（默认使用本地常量）
+let runtimeBuildingInteractions = BUILDING_INTERACTIONS
+
+/**
+ * 获取当前生效的建筑相互作用配置
+ * @returns {object} 当前规则配置
+ */
+export function getBuildingInteractions() {
+	return runtimeBuildingInteractions
+}
+
+/**
+ * 使用后端返回的 valueJson 覆盖运行时规则
+ * - valueJson 为空或格式异常时，自动回退到本地默认配置
+ * @param {string|object} valueJson - 后端配置字符串或对象
+ */
+export function setBuildingInteractionsFromConfig(valueJson) {
+	const isNullOrUndefined = valueJson === null || valueJson === undefined
+	const isEmptyString = typeof valueJson === "string" && valueJson.trim() === ""
+	const isEmptyObjectString = typeof valueJson === "string" && valueJson.trim() === "{}"
+
+	if (isNullOrUndefined || isEmptyString || isEmptyObjectString) {
+		runtimeBuildingInteractions = BUILDING_INTERACTIONS
+		console.info("[BuildingInteractions] 使用本地默认规则（原因：valueJson 缺失/空串/空对象字符串）")
+		return
+	}
+
+	try {
+		const parsedConfig = typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson
+		const isValidObject = parsedConfig && typeof parsedConfig === "object" && !Array.isArray(parsedConfig)
+		const isEmptyObject = isValidObject && Object.keys(parsedConfig).length === 0
+		if (isValidObject && !isEmptyObject) {
+			runtimeBuildingInteractions = parsedConfig
+			console.info("[BuildingInteractions] 使用远端运营规则（来源：config/current.valueJson）")
+			return
+		}
+	} catch (error) {
+		console.warn("解析运营配置 valueJson 失败，回退默认建筑规则:", error)
+	}
+
+	runtimeBuildingInteractions = BUILDING_INTERACTIONS
+	console.info("[BuildingInteractions] 使用本地默认规则（原因：valueJson 无效或为空对象）")
+}
