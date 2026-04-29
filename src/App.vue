@@ -130,7 +130,7 @@ async function forceExitGameAndFreeze() {
 		isGameForcedExit.value = true;
 		gameExitMessage.value = "当前时间段不允许继续游玩，游戏已自动退出。";
 		// 4. 弹框提示
-		window.alert(gameExitMessage.value);
+		// window.alert(gameExitMessage.value);
 		isExitingGame = false;
 	}
 }
