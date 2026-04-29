@@ -13,10 +13,12 @@
 	},
 	"scripts": {
 		"clean:dist": "npx rimraf dist",
+		"dev": "vite --host --mode test",
 		"dev:test": "vite --host --mode test",
 		"dev:prod": "vite --host --mode prod",
 		"build:test": "vite build --mode test",
-		"build:prod": "vite build --mode prod"
+		"build:prod": "vite build --mode prod",
+		"build": "vite build --mode prod"
 	},
 	"dependencies": {
 		"@vitejs/plugin-legacy": "^5.4.1",
